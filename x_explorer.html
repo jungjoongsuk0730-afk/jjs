@@ -1,0 +1,657 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>X 바이럴 탐색기</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Bebas+Neue&family=Noto+Sans+KR:wght@300;400;700&display=swap');
+
+  :root {
+    --bg: #0a0a0a;
+    --surface: #111;
+    --border: #222;
+    --accent: #1d9bf0;
+    --accent2: #f4c430;
+    --text: #e8e8e8;
+    --muted: #555;
+    --hot: #ff4444;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Noto Sans KR', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* BG grid */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(29,155,240,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(29,155,240,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .container {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 48px 24px;
+    position: relative;
+    z-index: 1;
+  }
+
+  header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 48px;
+  }
+
+  .logo {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 52px;
+    color: var(--accent);
+    line-height: 1;
+    text-shadow: 0 0 30px rgba(29,155,240,0.4);
+    letter-spacing: 2px;
+  }
+
+  .header-text h1 {
+    font-size: 20px;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+  }
+  .header-text p {
+    font-size: 12px;
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+    margin-top: 2px;
+  }
+
+  /* Search panel */
+  .search-panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 28px;
+    margin-bottom: 24px;
+  }
+
+  .panel-title {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    color: var(--accent);
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    margin-bottom: 20px;
+  }
+
+  .field-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 16px;
+  }
+
+  .field-full { grid-column: 1 / -1; }
+
+  .field label {
+    display: block;
+    font-size: 11px;
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+    margin-bottom: 8px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  .field input, .field select {
+    width: 100%;
+    background: #0a0a0a;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px 14px;
+    color: var(--text);
+    font-size: 14px;
+    font-family: 'Noto Sans KR', sans-serif;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  .field input:focus, .field select:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(29,155,240,0.1);
+  }
+
+  .field select option { background: #111; }
+
+  /* Preset chips */
+  .presets {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 20px;
+  }
+
+  .preset-chip {
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 6px 14px;
+    font-size: 12px;
+    color: var(--muted);
+    cursor: pointer;
+    transition: all 0.2s;
+    font-family: 'Noto Sans KR', sans-serif;
+  }
+
+  .preset-chip:hover, .preset-chip.active {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: rgba(29,155,240,0.08);
+  }
+
+  /* CTA */
+  .btn-row {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+  }
+
+  .btn-primary {
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    padding: 14px 28px;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    font-family: 'Noto Sans KR', sans-serif;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .btn-primary:hover {
+    background: #1a8cd8;
+    transform: translateY(-1px);
+    box-shadow: 0 8px 24px rgba(29,155,240,0.3);
+  }
+
+  .btn-secondary {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text);
+    border-radius: 10px;
+    padding: 14px 20px;
+    font-size: 14px;
+    cursor: pointer;
+    font-family: 'Noto Sans KR', sans-serif;
+    transition: all 0.2s;
+  }
+
+  .btn-secondary:hover {
+    border-color: var(--accent2);
+    color: var(--accent2);
+  }
+
+  .query-preview {
+    flex: 1;
+    background: #0a0a0a;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    color: var(--accent2);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  /* Results */
+  .results-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+  }
+
+  .results-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+  }
+
+  .sort-btns {
+    display: flex;
+    gap: 6px;
+  }
+
+  .sort-btn {
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 5px 10px;
+    font-size: 11px;
+    color: var(--muted);
+    cursor: pointer;
+    font-family: 'DM Mono', monospace;
+    transition: all 0.15s;
+  }
+
+  .sort-btn.active, .sort-btn:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  /* Trend cards */
+  .trend-grid {
+    display: grid;
+    gap: 12px;
+  }
+
+  .trend-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px 22px;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-decoration: none;
+    color: inherit;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .trend-card::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 3px;
+    background: var(--accent);
+    opacity: 0;
+    transition: opacity 0.2s;
+  }
+
+  .trend-card:hover {
+    border-color: rgba(29,155,240,0.4);
+    transform: translateX(4px);
+    background: #161616;
+  }
+
+  .trend-card:hover::before { opacity: 1; }
+
+  .rank {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 32px;
+    color: var(--border);
+    width: 36px;
+    text-align: center;
+    flex-shrink: 0;
+    transition: color 0.2s;
+  }
+
+  .trend-card:hover .rank { color: var(--accent); }
+
+  .trend-info { flex: 1; min-width: 0; }
+
+  .trend-query {
+    font-size: 15px;
+    font-weight: 700;
+    margin-bottom: 4px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .hot-badge {
+    background: var(--hot);
+    color: #fff;
+    font-size: 9px;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-family: 'DM Mono', monospace;
+    font-weight: 500;
+    letter-spacing: 1px;
+  }
+
+  .trend-desc {
+    font-size: 12px;
+    color: var(--muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .trend-meta {
+    text-align: right;
+    flex-shrink: 0;
+  }
+
+  .trend-count {
+    font-family: 'DM Mono', monospace;
+    font-size: 13px;
+    color: var(--accent);
+    font-weight: 500;
+  }
+
+  .trend-label {
+    font-size: 10px;
+    color: var(--muted);
+    margin-top: 2px;
+  }
+
+  .open-icon {
+    color: var(--muted);
+    font-size: 18px;
+    flex-shrink: 0;
+    transition: color 0.2s, transform 0.2s;
+  }
+
+  .trend-card:hover .open-icon {
+    color: var(--accent);
+    transform: translate(2px, -2px);
+  }
+
+  /* Filter tags */
+  .filter-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 20px;
+  }
+
+  .filter-tag {
+    background: rgba(29,155,240,0.1);
+    border: 1px solid rgba(29,155,240,0.3);
+    border-radius: 6px;
+    padding: 4px 10px;
+    font-size: 11px;
+    font-family: 'DM Mono', monospace;
+    color: var(--accent);
+  }
+
+  /* Notice */
+  .notice {
+    background: rgba(244,196,48,0.05);
+    border: 1px solid rgba(244,196,48,0.2);
+    border-radius: 10px;
+    padding: 14px 18px;
+    font-size: 12px;
+    color: rgba(244,196,48,0.8);
+    margin-top: 24px;
+    line-height: 1.6;
+    font-family: 'DM Mono', monospace;
+  }
+
+  .notice strong { color: var(--accent2); }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(12px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .trend-card {
+    animation: fadeUp 0.3s ease both;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <header>
+    <div class="logo">𝕏</div>
+    <div class="header-text">
+      <h1>바이럴 탐색기</h1>
+      <p>고인기 게시물 · 고급 검색 필터</p>
+    </div>
+  </header>
+
+  <div class="search-panel">
+    <div class="panel-title">// 검색 조건 설정</div>
+
+    <div class="field-row">
+      <div class="field field-full">
+        <label>키워드 / 해시태그</label>
+        <input type="text" id="keyword" placeholder="예: AI, #챗GPT, 주식, 마케팅..." />
+      </div>
+    </div>
+
+    <div class="field-row">
+      <div class="field">
+        <label>최소 좋아요 수</label>
+        <select id="minLikes">
+          <option value="1000">1,000+</option>
+          <option value="5000" selected>5,000+</option>
+          <option value="10000">10,000+</option>
+          <option value="50000">50,000+</option>
+          <option value="100000">100,000+</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>최소 리트윗 수</label>
+        <select id="minRT">
+          <option value="100">100+</option>
+          <option value="500" selected>500+</option>
+          <option value="1000">1,000+</option>
+          <option value="5000">5,000+</option>
+          <option value="10000">10,000+</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="field-row">
+      <div class="field">
+        <label>기간</label>
+        <select id="period">
+          <option value="1d">최근 24시간</option>
+          <option value="7d" selected>최근 7일</option>
+          <option value="30d">최근 30일</option>
+          <option value="90d">최근 90일</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>언어</label>
+        <select id="lang">
+          <option value="ko" selected>한국어</option>
+          <option value="en">영어</option>
+          <option value="ja">일본어</option>
+          <option value="all">전체</option>
+        </select>
+      </div>
+    </div>
+
+    <div style="margin-bottom:16px;">
+      <div class="panel-title" style="margin-bottom:10px;">// 빠른 주제 선택</div>
+      <div class="presets" id="presets">
+        <button class="preset-chip" onclick="setPreset('AI')">🤖 AI</button>
+        <button class="preset-chip" onclick="setPreset('주식')">📈 주식</button>
+        <button class="preset-chip" onclick="setPreset('마케팅')">📣 마케팅</button>
+        <button class="preset-chip" onclick="setPreset('스타트업')">🚀 스타트업</button>
+        <button class="preset-chip" onclick="setPreset('개발 개발자')">💻 개발</button>
+        <button class="preset-chip" onclick="setPreset('정치')">🏛 정치</button>
+        <button class="preset-chip" onclick="setPreset('연예인 셀럽')">⭐ 연예</button>
+        <button class="preset-chip" onclick="setPreset('부동산')">🏠 부동산</button>
+      </div>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn-primary" onclick="generateSearch()">
+        <span>🔍</span> X에서 탐색
+      </button>
+      <button class="btn-secondary" onclick="copyQuery()">쿼리 복사</button>
+      <div class="query-preview" id="queryPreview">키워드를 입력하세요...</div>
+    </div>
+  </div>
+
+  <!-- 추천 탐색 목록 -->
+  <div class="results-header">
+    <div class="results-label">// 추천 탐색 쿼리</div>
+    <div class="sort-btns">
+      <button class="sort-btn active" onclick="setSort('hot', this)">🔥 HOT</button>
+      <button class="sort-btn" onclick="setSort('likes', this)">❤️ 좋아요</button>
+      <button class="sort-btn" onclick="setSort('rt', this)">🔁 RT</button>
+    </div>
+  </div>
+
+  <div class="filter-tags">
+    <span class="filter-tag">min_faves:5000</span>
+    <span class="filter-tag">min_retweets:500</span>
+    <span class="filter-tag">lang:ko</span>
+    <span class="filter-tag">-filter:replies</span>
+  </div>
+
+  <div class="trend-grid" id="trendGrid"></div>
+
+  <div class="notice">
+    <strong>💡 사용 방법</strong><br>
+    위 버튼을 클릭하면 X 고급 검색 페이지가 열립니다.<br>
+    X는 <strong>min_faves:</strong> · <strong>min_retweets:</strong> 연산자로 조회수 높은 글을 필터링할 수 있습니다.<br>
+    X API v2 유료 플랜(Basic $100/월~)을 사용하면 프로그래밍 방식 수집도 가능합니다.
+  </div>
+
+</div>
+
+<script>
+const TRENDS = [
+  { query: 'AI 인공지능', desc: 'AI 관련 최신 바이럴 게시물', likes: '5000', rt: '500', emoji: '🤖', hot: true },
+  { query: '챗GPT GPT', desc: 'ChatGPT/GPT 활용 꿀팁·후기', likes: '5000', rt: '500', emoji: '💬', hot: true },
+  { query: '주식 투자 수익', desc: '수익 인증·투자 전략 트윗', likes: '5000', rt: '500', emoji: '📈', hot: false },
+  { query: '마케팅 브랜딩', desc: '마케터들의 인사이트 공유', likes: '5000', rt: '500', emoji: '📣', hot: false },
+  { query: '스타트업 창업', desc: '창업가 경험담·성공 스토리', likes: '5000', rt: '500', emoji: '🚀', hot: true },
+  { query: '개발자 코딩', desc: '개발 팁·오픈소스·취업 후기', likes: '5000', rt: '500', emoji: '💻', hot: false },
+  { query: '부동산 아파트', desc: '부동산 시황·투자 분석', likes: '5000', rt: '500', emoji: '🏠', hot: false },
+  { query: '독서 책추천', desc: '독서인들의 책 리뷰·추천', likes: '3000', rt: '300', emoji: '📚', hot: false },
+];
+
+let currentSort = 'hot';
+
+function buildQuery(keyword, likes, rt, period, lang) {
+  let q = keyword.trim();
+  q += ` min_faves:${likes} min_retweets:${rt}`;
+  if (lang !== 'all') q += ` lang:${lang}`;
+  q += ' -filter:replies';
+  return q;
+}
+
+function buildURL(query, period) {
+  const since = getSince(period);
+  let url = `https://x.com/search?q=${encodeURIComponent(query)}`;
+  if (since) url += `%20since%3A${since}`;
+  url += '&src=typed_query&f=top';
+  return url;
+}
+
+function getSince(period) {
+  const d = new Date();
+  if (period === '1d') d.setDate(d.getDate() - 1);
+  else if (period === '7d') d.setDate(d.getDate() - 7);
+  else if (period === '30d') d.setDate(d.getDate() - 30);
+  else if (period === '90d') d.setDate(d.getDate() - 90);
+  else return null;
+  return d.toISOString().split('T')[0];
+}
+
+function getInputs() {
+  return {
+    keyword: document.getElementById('keyword').value || 'AI',
+    likes: document.getElementById('minLikes').value,
+    rt: document.getElementById('minRT').value,
+    period: document.getElementById('period').value,
+    lang: document.getElementById('lang').value,
+  };
+}
+
+function updatePreview() {
+  const { keyword, likes, rt, period, lang } = getInputs();
+  const q = buildQuery(keyword, likes, rt, period, lang);
+  document.getElementById('queryPreview').textContent = q;
+}
+
+['keyword','minLikes','minRT','period','lang'].forEach(id => {
+  document.getElementById(id).addEventListener('input', updatePreview);
+  document.getElementById(id).addEventListener('change', updatePreview);
+});
+
+function generateSearch() {
+  const { keyword, likes, rt, period, lang } = getInputs();
+  const q = buildQuery(keyword, likes, rt, period, lang);
+  const url = buildURL(q, period);
+  window.open(url, '_blank');
+}
+
+function copyQuery() {
+  const { keyword, likes, rt, period, lang } = getInputs();
+  const q = buildQuery(keyword, likes, rt, period, lang);
+  navigator.clipboard.writeText(q).then(() => {
+    const btn = document.querySelector('.btn-secondary');
+    btn.textContent = '✓ 복사됨';
+    setTimeout(() => btn.textContent = '쿼리 복사', 1500);
+  });
+}
+
+function setPreset(kw) {
+  document.getElementById('keyword').value = kw;
+  document.querySelectorAll('.preset-chip').forEach(c => c.classList.remove('active'));
+  event.target.classList.add('active');
+  updatePreview();
+}
+
+function setSort(type, btn) {
+  currentSort = type;
+  document.querySelectorAll('.sort-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderTrends();
+}
+
+function renderTrends() {
+  let sorted = [...TRENDS];
+  if (currentSort === 'hot') sorted = sorted.sort((a, b) => b.hot - a.hot);
+  else if (currentSort === 'likes') sorted = sorted.sort((a, b) => parseInt(b.likes) - parseInt(a.likes));
+  else sorted = sorted.sort((a, b) => parseInt(b.rt) - parseInt(a.rt));
+
+  const grid = document.getElementById('trendGrid');
+  grid.innerHTML = sorted.map((t, i) => {
+    const q = buildQuery(t.query, t.likes, t.rt, '7d', 'ko');
+    const url = buildURL(q, '7d');
+    return `
+    <a class="trend-card" href="${url}" target="_blank" style="animation-delay:${i * 0.04}s">
+      <div class="rank">${String(i+1).padStart(2,'0')}</div>
+      <div class="trend-info">
+        <div class="trend-query">
+          ${t.emoji} ${t.query}
+          ${t.hot ? '<span class="hot-badge">HOT</span>' : ''}
+        </div>
+        <div class="trend-desc">${t.desc}</div>
+      </div>
+      <div class="trend-meta">
+        <div class="trend-count">❤️ ${parseInt(t.likes).toLocaleString()}+</div>
+        <div class="trend-label">최소 좋아요</div>
+      </div>
+      <div class="open-icon">↗</div>
+    </a>`;
+  }).join('');
+}
+
+renderTrends();
+updatePreview();
+</script>
+</body>
+</html>
